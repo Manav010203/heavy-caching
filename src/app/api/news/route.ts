@@ -42,7 +42,7 @@ export async function GET(req:NextRequest) {
             };
         }));
 
-        await redis.set(cacheKey,JSON.stringify(items),{EX:300})
+        await redis.set(cacheKey,JSON.stringify(items),{EX:20})
         return NextResponse.json({ source: "fresh", data: items });
     }catch(err){
         console.error(err);
