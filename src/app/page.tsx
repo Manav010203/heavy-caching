@@ -1,65 +1,91 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+
+type NewsInfo = {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+  time: string;
+};
 
 export default function Home() {
+  const [topic, setTopic] = useState("technology");
+  const [articles, setArticles] = useState<NewsInfo[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState(""); // cache or fresh
+  const [error, setError] = useState("");
+
+  const fetchNews = async (t: string) => {
+    try {
+      setIsLoading(true);
+      setError("");
+
+      const res = await fetch(`/api/news?topic=${t}`);
+      if (!res.ok) throw new Error("Failed to fetch news");
+
+      // Check cache info from server headers
+      const fromCache = res.headers.get("x-cache") === "HIT";
+      setStatus(fromCache ? "From Cache 🧠" : "Fresh Fetch ⚡");
+
+      const data = await res.json();
+setArticles(Array.isArray(data.data) ? data.data : []);
+
+    } catch (err) {
+      setError("Could not load news.");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNews(topic);
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <main className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold mb-4">📰 Latest {topic} News</h1>
+
+        <div className="flex gap-2 mb-4">
+          <input
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="Enter topic..."
+            className="border p-2 rounded flex-1"
+          />
+          <button
+            onClick={() => fetchNews(topic)}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Fetch
+          </button>
         </div>
-      </main>
-    </div>
+
+        {status && <p className="mb-4 text-sm text-gray-600">{status}</p>}
+        {isLoading && <p>Loading...</p>}
+        {error && <p className="text-red-500">{error}</p>}
+
+        <ul className="space-y-3">
+          {articles.map((a) => (
+            <li key={a.id} className="p-4 border rounded bg-white shadow-sm">
+              <a
+                href={a.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 font-medium hover:underline"
+              >
+                {a.title}
+              </a>
+              <p className="text-sm text-gray-500">
+                {a.source} — {new Date(a.time).toLocaleString()}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </main>
   );
 }
