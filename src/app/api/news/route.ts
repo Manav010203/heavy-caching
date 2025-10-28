@@ -15,7 +15,7 @@ export async function GET(req:NextRequest) {
         const cacheKey = `news:${topic}`;
         const cached =await redis.get(cacheKey);
         if(cached){
-            console.log("Cache memory is hitting huuuuraaah!!")
+            // console.log("Cache memory is hitting huuuuraaah!!")
               return NextResponse.json({ source: "cache", data: JSON.parse(cached) });
         }
         const news = await fetch("https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty")
